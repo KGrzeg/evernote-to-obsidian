@@ -3,6 +3,8 @@ import os, re
 
 import html2text
 
+HTML_PATH = "html"
+
 
 class Resource:
     def __init__(self, resource_tag):
@@ -13,6 +15,9 @@ class Resource:
             )
 
         self.base64 = data.text.replace("\n", "").strip()
+
+    def get_md(self):
+        return f"![](data:image/png;base64,{self.base64})"
 
 
 class Note:
@@ -34,22 +39,48 @@ class Note:
                     if attr.tag == "source-url":
                         self.is_bookmark = True
 
-    def get_filename(self):
-        return re.sub('[*"\/<>:|?]', "_", self.title) + ".md"
+    def get_filename(self, ext="md"):
+        filename = re.sub('[*"\/<>:|?]', "_", self.title)
+        if ext:
+            filename += "." + ext
+
+        return filename
 
     def get_content(self):
         return html2text.html2text(self.content)
 
-    def write_to_file(self, directory):
-        target_path = os.path.join(directory, self.get_filename())
+    def get_meta_list(self):
+        ret = ""
+        for k, v in self.attributes.items():
+            ret += f"- **{k}**: {v}\n"
 
-        with open(target_path, "w") as file:
-            file.write(self.get_content())
+        return ret
 
-            if self.resource:
-                file.write("\n\n![](data:image/png;base64,")
-                file.write(self.resource.base64)
-                file.write(")")
+    def write_as_html(self, path):
+        with open(path, "w") as file:
+            file.write(self.content)
+
+    def write(self, note_dir):
+        target_path = os.path.join(note_dir, self.get_filename())
+
+        if self.is_bookmark:
+            html_path = os.path.join(note_dir, HTML_PATH, self.get_filename("html"))
+
+            # TODO: create html directory if not exist
+            with open(target_path, "w") as file:
+                file.write(self.get_meta_list())
+                file.write(
+                    f"\n\nI will be connected to `{HTML_PATH}/{self.get_filename('html')}`"
+                )
+
+            self.write_as_html(html_path)
+
+        else:
+            with open(target_path, "w") as file:
+                file.write(self.get_content())
+
+                if self.resource:
+                    file.write(f"\n\n{self.resource.get_md()}")
 
 
 class Notepad:
