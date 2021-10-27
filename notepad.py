@@ -1,9 +1,24 @@
 import xml.etree.ElementTree as ET
-import os, re
+import os, re, base64, hashlib
 
-import html2text
+import ENML_PY
 
-HTML_PATH = "html"
+RESOURCE_PATH = "res"
+
+
+class Enml_resource_finder:
+    def __init__(self, note):
+        self.note = note
+
+    def save(self, hash_str, mime_type):
+        res = self.note.get_resource(hash_str)
+
+        if res != None:
+            return res.filename
+
+        else:
+            print("Resource not found")
+            return "_undefined_resource_"
 
 
 class Resource:
@@ -14,15 +29,31 @@ class Resource:
                 self.__class__.__name__ + " not base64 encoded resource"
             )
 
+        self.mime = resource_tag.find("mime").text
         self.base64 = data.text.replace("\n", "").strip()
+        self.binary = base64.b64decode(self.base64)
+        self.hash = hashlib.md5(self.binary).hexdigest()
+        self.filename = self.hash
+
+        filename = resource_tag.find("resource-attributes/file-name")
+        if filename != None and filename.text:
+            self.filename = filename.text
+
+        sourceurl = resource_tag.find("resource-attributes/source-url")
+        if sourceurl != None and sourceurl.text:
+            self.sourceurl = sourceurl.text
 
     def get_md(self):
         return f"![](data:image/png;base64,{self.base64})"
 
+    def write(self, path):
+        with open(path, "wb") as file:
+            file.write(self.binary)
+
 
 class Note:
     def __init__(self, note_tag):
-        self.resource = None
+        self.resources = []
         self.attributes = {}
         self.is_bookmark = False
 
@@ -31,7 +62,7 @@ class Note:
                 setattr(self, property.tag, property.text)
 
             if property.tag == "resource":
-                self.resource = Resource(property)
+                self.resources.append(Resource(property))
 
             if property.tag == "note-attributes":
                 for attr in property:
@@ -46,8 +77,15 @@ class Note:
 
         return filename
 
+    def get_resource(self, hash):
+        for resource in self.resources:
+            if resource.hash == hash:
+                return resource
+        return None
+
     def get_content(self):
-        return html2text.html2text(self.content)
+        con = ENML_PY.ENMLToText(self.content, media_store=Enml_resource_finder(self))
+        return re.sub(r"\n\s*\n", "\n\n", con)
 
     def get_meta_list(self):
         ret = "---\n"
@@ -64,27 +102,11 @@ class Note:
     def write(self, note_dir):
         target_path = os.path.join(note_dir, self.get_filename())
 
-        if self.is_bookmark:
-            html_path = os.path.join(note_dir, HTML_PATH, self.get_filename("html"))
+        with open(target_path, "w") as file:
+            file.write(self.get_meta_list())
+            file.write(f"\n\n{self.get_content()}")
 
-            # TODO: create html directory if not exist
-            with open(target_path, "w") as file:
-                file.write(self.get_meta_list())
-                file.write(
-                    f"\n\nI will be connected to `{HTML_PATH}/{self.get_filename('html')}`"
-                )
-
-            self.write_as_html(html_path)
-            return (target_path, html_path)
-
-        else:
-            with open(target_path, "w") as file:
-                file.write(self.get_content())
-
-                if self.resource:
-                    file.write(f"\n\n{self.resource.get_md()}")
-
-        return (target_path,)
+        return target_path
 
 
 class Notepad:
@@ -101,10 +123,8 @@ class Notepad:
 
     def write_notes(self, outputdir):
         for note in self.notes:
-            paths = note.write(outputdir)
-
-            for path in paths:
-                print("Wrote " + path)
+            path = note.write(outputdir)
+            print("Wrote " + path)
 
     def print_note_list(self):
         for (i, note) in enumerate(self.notes):
