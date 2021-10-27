@@ -74,6 +74,7 @@ class Note:
                 )
 
             self.write_as_html(html_path)
+            return (target_path, html_path)
 
         else:
             with open(target_path, "w") as file:
@@ -81,6 +82,8 @@ class Note:
 
                 if self.resource:
                     file.write(f"\n\n{self.resource.get_md()}")
+
+        return (target_path,)
 
 
 class Notepad:
@@ -95,6 +98,13 @@ class Notepad:
             note = Note(note_tag)
             self.notes.append(note)
 
-    def print_notes(self):
+    def write_notes(self, outputdir):
+        for note in self.notes:
+            paths = note.write(outputdir)
+
+            for path in paths:
+                print("Wrote " + path)
+
+    def print_note_list(self):
         for (i, note) in enumerate(self.notes):
             print(f"{i} | {note.title} {'#bookmark' if note.is_bookmark else ''}")

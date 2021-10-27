@@ -21,11 +21,12 @@ def print_and_exit(status=None):
 
 def print_notes(inputfile):
     notepad = Notepad(inputfile)
-    notepad.print_notes()
+    notepad.print_note_list()
 
 
 def parse(inputfile, outputdir):
     notepad = Notepad(inputfile)
+    notepad.write_notes(outputdir)
 
 
 def main(argv):
