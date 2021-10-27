@@ -18,6 +18,8 @@ class Resource:
 class Note:
     def __init__(self, note_tag):
         self.resource = None
+        self.attributes = {}
+        self.is_bookmark = False
 
         for property in note_tag:
             if property.tag in ("title", "created", "updated", "content"):
@@ -25,6 +27,12 @@ class Note:
 
             if property.tag == "resource":
                 self.resource = Resource(property)
+
+            if property.tag == "note-attributes":
+                for attr in property:
+                    self.attributes[attr.tag] = attr.text
+                    if attr.tag == "source-url":
+                        self.is_bookmark = True
 
     def get_filename(self):
         return re.sub('[*"\/<>:|?]', "_", self.title) + ".md"
@@ -50,14 +58,12 @@ class Notepad:
         self.notes = []
 
         self.read_notes()
-        print(str(self.notes))
 
     def read_notes(self):
         for note_tag in self.root.findall("note"):
             note = Note(note_tag)
             self.notes.append(note)
-    
-    def print_notes(self):
-        for (i,note) in enumerate(self.notes):
-            print(f"{i} | {note.title}")
 
+    def print_notes(self):
+        for (i, note) in enumerate(self.notes):
+            print(f"{i} | {note.title} {'#bookmark' if note.is_bookmark else ''}")
