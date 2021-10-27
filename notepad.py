@@ -56,3 +56,8 @@ class Notepad:
         for note_tag in self.root.findall("note"):
             note = Note(note_tag)
             self.notes.append(note)
+    
+    def print_notes(self):
+        for (i,note) in enumerate(self.notes):
+            print(f"{i} | {note.title}")
+
