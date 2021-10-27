@@ -1,4 +1,5 @@
 import xml.etree.ElementTree as ET
+import os, re
 
 
 class Resource:
@@ -22,6 +23,15 @@ class Note:
 
             if property.tag == "resource":
                 self.resource = Resource(property)
+
+    def get_filename(self):
+        return re.sub('[*"\/<>:|?]', "_", self.title) + ".html"
+
+    def write_to_file(self, directory):
+        target_path = os.path.join(directory, self.get_filename())
+
+        with open(target_path, "w") as file:
+            file.write(self.content)
 
 
 class Notepad:
