@@ -50,9 +50,10 @@ class Note:
         return html2text.html2text(self.content)
 
     def get_meta_list(self):
-        ret = ""
+        ret = "---\n"
         for k, v in self.attributes.items():
-            ret += f"- **{k}**: {v}\n"
+            ret += f"{k}: {v}\n"
+        ret += "---\n\n"
 
         return ret
 
