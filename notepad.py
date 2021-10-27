@@ -1,6 +1,8 @@
 import xml.etree.ElementTree as ET
 import os, re
 
+import html2text
+
 
 class Resource:
     def __init__(self, resource_tag):
@@ -25,13 +27,21 @@ class Note:
                 self.resource = Resource(property)
 
     def get_filename(self):
-        return re.sub('[*"\/<>:|?]', "_", self.title) + ".html"
+        return re.sub('[*"\/<>:|?]', "_", self.title) + ".md"
+
+    def get_content(self):
+        return html2text.html2text(self.content)
 
     def write_to_file(self, directory):
         target_path = os.path.join(directory, self.get_filename())
 
         with open(target_path, "w") as file:
-            file.write(self.content)
+            file.write(self.get_content())
+
+            if self.resource:
+                file.write("\n\n![](data:image/png;base64,")
+                file.write(self.resource.base64)
+                file.write(")")
 
 
 class Notepad:
