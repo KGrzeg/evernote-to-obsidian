@@ -2,10 +2,16 @@
 
 import sys, getopt
 
+from notepad import Notepad
+
 
 def print_and_exit(status=None):
     print("converter.py -i <inputfile> -o <outputdir>")
     sys.exit(status)
+
+
+def parse(inputfile):
+    notepad = Notepad(inputfile)
 
 
 def main(argv):
@@ -38,6 +44,8 @@ def main(argv):
 
     print("Input file is ", inputfile)
     print("Output file is ", outputdir)
+
+    parse(inputfile)
 
 
 if __name__ == "__main__":
