@@ -107,7 +107,7 @@ class Note:
         ret = "---\n"
         for k, v in self.attributes.items():
             ret += f"{k}: {v}\n"
-        ret += "---\n\n"
+        ret += "---\n"
 
         return ret
 
