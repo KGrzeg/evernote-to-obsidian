@@ -6,15 +6,15 @@ from notepad import Notepad
 
 
 def print_and_exit(status=None):
-    print("converter.py -i <inputfile> [-o <outputdir>] [-s <htmldir>] [-p]")
+    print("converter.py -i <inputfile> [-o <outputdir>] [-r <attachmentdir>] [-p]")
     print("arguments:")
     print(" -h prints help and exit")
     print(" -i input file ex. notes.enex")
     print(" -o output directory for notes")
     print("  The -o argument is required only if -p is not set")
-    print(" -s output directory for html files")
-    print('  default value is "html" relative to -o')
-    print(" -p prints notes list and exit")
+    print(" -r output directory for resource files relative to -o")
+    print('  default value is "res"')
+    print(" -p prints note list and exit")
 
     sys.exit(status)
 
@@ -24,20 +24,20 @@ def print_notes(inputfile):
     notepad.print_note_list()
 
 
-def parse(inputfile, outputdir):
+def parse(inputfile, outputdir, attachmentdir):
     notepad = Notepad(inputfile)
-    notepad.write_notes(outputdir)
+    notepad.write_notes(outputdir, attachmentdir)
 
 
 def main(argv):
     inputfile = ""
     outputdir = ""
-    sources = ""
+    attachmentdir = "res"
     only_print = False
 
     try:
         opts, args = getopt.getopt(
-            argv, "hpi:o:s:", ["printlist", "ifile=", "odir=", "sources="]
+            argv, "hpi:o:r:", ["printlist", "ifile=", "odir=", "attachmentdir="]
         )
 
     except getopt.GetoptError:
@@ -56,8 +56,8 @@ def main(argv):
         elif opt in ("-o", "--odir"):
             outputdir = arg
 
-        elif opt in ("-s", "--sources"):
-            sources = arg
+        elif opt in ("-r", "--attachmentdir"):
+            attachmentdir = arg
 
     if inputfile == "":
         print("inputfile is required")
@@ -67,8 +67,7 @@ def main(argv):
         print("outputdir is required")
         print_and_exit(2)
 
-    if sources == "":
-        sources = os.path.join(outputdir, "html")
+    attachmentdir = os.path.join(outputdir, attachmentdir)
 
     print("Input file is ", inputfile)
     print("Output file is ", outputdir)
@@ -76,7 +75,7 @@ def main(argv):
     if only_print:
         print_notes(inputfile)
     else:
-        parse(inputfile, outputdir)
+        parse(inputfile, outputdir, attachmentdir)
 
 
 if __name__ == "__main__":

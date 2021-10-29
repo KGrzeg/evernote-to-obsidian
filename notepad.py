@@ -3,8 +3,6 @@ import os, re, base64, hashlib
 
 import ENML_PY
 
-ATTACHMENT_FOLDER = "res"
-
 
 def get_extension(mime):
     try:
@@ -125,15 +123,14 @@ class Note:
 
         return paths
 
-    def write(self, note_dir):
+    def write(self, note_dir, attachmentdir):
         note_path = os.path.join(note_dir, self.get_filename())
 
         with open(note_path, "w") as file:
             file.write(self.get_meta_list())
             file.write(f"\n\n{self.get_content()}")
 
-        res_dir = os.path.join(note_dir, ATTACHMENT_FOLDER)
-        res_paths = self.write_resources(res_dir)
+        res_paths = self.write_resources(attachmentdir)
 
         return (note_path, *res_paths)
 
@@ -150,9 +147,9 @@ class Notepad:
             note = Note(note_tag)
             self.notes.append(note)
 
-    def write_notes(self, outputdir):
+    def write_notes(self, outputdir, attachmentdir):
         for note in self.notes:
-            paths = note.write(outputdir)
+            paths = note.write(outputdir, attachmentdir)
 
             for path in paths:
                 print("Saved " + path)
