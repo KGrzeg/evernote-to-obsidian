@@ -3,7 +3,14 @@ import os, re, base64, hashlib
 
 import ENML_PY
 
-RESOURCE_PATH = "res"
+ATTACHMENT_FOLDER = "res"
+
+
+def get_extension(mime):
+    try:
+        return ENML_PY.MIME_TO_EXTESION_MAPPING[mime]
+    except KeyError:
+        return ""
 
 
 class Enml_resource_finder:
@@ -14,7 +21,7 @@ class Enml_resource_finder:
         res = self.note.get_resource(hash_str)
 
         if res != None:
-            return res.filename
+            return res.get_filename()
 
         else:
             print("Resource not found")
@@ -46,9 +53,20 @@ class Resource:
     def get_md(self):
         return f"![](data:image/png;base64,{self.base64})"
 
-    def write(self, path):
+    def get_filename(self):
+        ext = get_extension(self.mime)
+        if self.filename:
+            return f"{self.filename}{ext}"
+
+        raise RuntimeError(self.__class__.__name__ + " can't figure out filename")
+
+    def write(self, directory):
+        path = os.path.join(directory, self.get_filename())
+
         with open(path, "wb") as file:
             file.write(self.binary)
+
+        return path
 
 
 class Note:
@@ -99,14 +117,25 @@ class Note:
         with open(path, "w") as file:
             file.write(self.content)
 
-    def write(self, note_dir):
-        target_path = os.path.join(note_dir, self.get_filename())
+    def write_resources(self, dir):
+        paths = ()
+        for resource in self.resources:
+            path = resource.write(dir)
+            paths = (*paths, path)
 
-        with open(target_path, "w") as file:
+        return paths
+
+    def write(self, note_dir):
+        note_path = os.path.join(note_dir, self.get_filename())
+
+        with open(note_path, "w") as file:
             file.write(self.get_meta_list())
             file.write(f"\n\n{self.get_content()}")
 
-        return target_path
+        res_dir = os.path.join(note_dir, ATTACHMENT_FOLDER)
+        res_paths = self.write_resources(res_dir)
+
+        return (note_path, *res_paths)
 
 
 class Notepad:
@@ -123,8 +152,10 @@ class Notepad:
 
     def write_notes(self, outputdir):
         for note in self.notes:
-            path = note.write(outputdir)
-            print("Wrote " + path)
+            paths = note.write(outputdir)
+
+            for path in paths:
+                print("Saved " + path)
 
     def print_note_list(self):
         for (i, note) in enumerate(self.notes):
