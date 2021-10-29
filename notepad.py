@@ -123,14 +123,16 @@ class Note:
 
         return paths
 
-    def write(self, note_dir, attachmentdir):
+    def write(self, note_dir, attachmentdir, dumpres):
         note_path = os.path.join(note_dir, self.get_filename())
 
         with open(note_path, "w") as file:
             file.write(self.get_meta_list())
             file.write(f"\n\n{self.get_content()}")
 
-        res_paths = self.write_resources(attachmentdir)
+        res_paths = ()
+        if dumpres:
+            res_paths = self.write_resources(attachmentdir)
 
         return (note_path, *res_paths)
 
@@ -147,9 +149,9 @@ class Notepad:
             note = Note(note_tag)
             self.notes.append(note)
 
-    def write_notes(self, outputdir, attachmentdir):
+    def write_notes(self, outputdir, attachmentdir, dumpres):
         for note in self.notes:
-            paths = note.write(outputdir, attachmentdir)
+            paths = note.write(outputdir, attachmentdir, dumpres)
 
             for path in paths:
                 print("Saved " + path)

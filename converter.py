@@ -6,7 +6,7 @@ from notepad import Notepad
 
 
 def print_and_exit(status=None):
-    print("converter.py -i <inputfile> [-o <outputdir>] [-r <attachmentdir>] [-p]")
+    print("converter.py -i <inputfile> [-o <outputdir>] [-r <attachmentdir>] [-p] [-d]")
     print("arguments:")
     print(" -h prints help and exit")
     print(" -i input file ex. notes.enex")
@@ -15,6 +15,7 @@ def print_and_exit(status=None):
     print(" -r output directory for resource files relative to -o")
     print('  default value is "res"')
     print(" -p prints note list and exit")
+    print(" -d do not save resources")
 
     sys.exit(status)
 
@@ -24,9 +25,9 @@ def print_notes(inputfile):
     notepad.print_note_list()
 
 
-def parse(inputfile, outputdir, attachmentdir):
+def parse(inputfile, outputdir, attachmentdir, dumpres):
     notepad = Notepad(inputfile)
-    notepad.write_notes(outputdir, attachmentdir)
+    notepad.write_notes(outputdir, attachmentdir, dumpres)
 
 
 def main(argv):
@@ -34,10 +35,11 @@ def main(argv):
     outputdir = ""
     attachmentdir = "res"
     only_print = False
+    dumpres = True
 
     try:
         opts, args = getopt.getopt(
-            argv, "hpi:o:r:", ["printlist", "ifile=", "odir=", "attachmentdir="]
+            argv, "hdpi:o:r:", ["dump", "printlist", "ifile=", "odir=", "attachmentdir="]
         )
 
     except getopt.GetoptError:
@@ -49,6 +51,9 @@ def main(argv):
 
         if opt in ("-p", "--printlist"):
             only_print = True
+
+        if opt in ("-d", "--dump"):
+            dumpres = False
 
         elif opt in ("-i", "--ifile"):
             inputfile = arg
@@ -75,7 +80,7 @@ def main(argv):
     if only_print:
         print_notes(inputfile)
     else:
-        parse(inputfile, outputdir, attachmentdir)
+        parse(inputfile, outputdir, attachmentdir, dumpres)
 
 
 if __name__ == "__main__":
