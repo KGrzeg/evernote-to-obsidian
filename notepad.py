@@ -1,7 +1,20 @@
 import xml.etree.ElementTree as ET
 import os, re, base64, hashlib
+from pathlib import Path
 
 import ENML_PY
+
+
+def safe_open(path, mode):
+    parent = Path(path).parent.absolute()
+
+    try:
+        os.makedirs(parent)
+    except FileExistsError:
+        # directory already exists
+        pass
+
+    return open(path, mode)
 
 
 def get_extension(mime):
@@ -61,7 +74,7 @@ class Resource:
     def write(self, directory):
         path = os.path.join(directory, self.get_filename())
 
-        with open(path, "wb") as file:
+        with safe_open(path, "wb") as file:
             file.write(self.binary)
 
         return path
