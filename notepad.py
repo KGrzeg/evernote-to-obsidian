@@ -29,7 +29,7 @@ class Enml_resource_finder:
 
 
 class Resource:
-    def __init__(self, resource_tag):
+    def __init__(self, resource_tag, used_names=[]):
         data = resource_tag.find("data")
         if data.attrib["encoding"] != "base64":
             raise NotImplementedError(
@@ -45,6 +45,13 @@ class Resource:
         filename = resource_tag.find("resource-attributes/file-name")
         if filename != None and filename.text:
             self.filename = filename.text
+
+        base = basename_without_ext(self.filename)
+        _, ext = os.path.splitext(self.filename)
+        counter = 1
+        while self.filename in used_names:
+            self.filename = f"{base}_{counter}{ext}"
+            counter += 1
 
         sourceurl = resource_tag.find("resource-attributes/source-url")
         if sourceurl != None and sourceurl.text:
@@ -71,7 +78,7 @@ class Resource:
 
 
 class Note:
-    def __init__(self, note_tag):
+    def __init__(self, note_tag, used_names=[]):
         self.resources = []
         self.attributes = {}
         self.is_bookmark = False
@@ -81,7 +88,7 @@ class Note:
                 setattr(self, property.tag, property.text)
 
             if property.tag == "resource":
-                self.resources.append(Resource(property))
+                self.resources.append(Resource(property, used_names))
 
             if property.tag == "note-attributes":
                 for attr in property:
@@ -114,6 +121,13 @@ class Note:
 
         return ret
 
+    def get_resource_names(self):
+        names = []
+        for res in self.resources:
+            names.append(res.get_filename())
+
+        return names
+
     def write_as_html(self, path):
         with open(path, "w") as file:
             file.write(self.content)
@@ -144,13 +158,17 @@ class Notepad:
     def __init__(self, inputfile):
         self.root = ET.parse(inputfile).getroot()
         self.notes = []
+        self.resource_names = []
 
         self.read_notes()
 
     def read_notes(self):
         for note_tag in self.root.findall("note"):
-            note = Note(note_tag)
+            note = Note(note_tag, self.resource_names)
             self.notes.append(note)
+
+            if note.get_resource_names():
+                self.resource_names.extend(note.get_resource_names())
 
     def write_notes(self, outputdir, attachmentdir, dumpres):
         for note in self.notes:
