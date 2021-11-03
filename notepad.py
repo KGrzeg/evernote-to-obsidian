@@ -182,11 +182,13 @@ class Note:
 
         return (pdf_path,)
 
-    def write_md(self, note_dir):
+    def write_md(self, note_dir, prefix=""):
         note_path = os.path.join(note_dir, self.get_filename())
 
         with safe_open(note_path, "w") as file:
             file.write(self.get_meta_list())
+            if prefix:
+                file.write(f"\n\n{prefix}")
             file.write(f"\n\n{self.get_content_md()}")
 
         return (note_path,)
@@ -195,10 +197,9 @@ class Note:
         pdf_path, note_path, res_paths = (), (), ()
 
         if self.is_bookmark:
-            pdf_path = self.write_pdf(note_dir)
-
-            # TODO: write simple note with link to PDF
-            note_path = self.write_md(note_dir)
+            pdf_path = self.write_pdf(attachmentdir)
+            prefix = f'![[{ self.get_filename(ext="pdf") }]]'
+            note_path = self.write_md(note_dir, prefix)
         else:
             note_path = self.write_md(note_dir)
 
