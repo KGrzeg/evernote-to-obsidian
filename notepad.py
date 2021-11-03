@@ -1,27 +1,16 @@
 import xml.etree.ElementTree as ET
 import os, re, base64, hashlib
-from pathlib import Path
 
 import ENML_PY
 
-
-def safe_open(path, mode):
-    parent = Path(path).parent.absolute()
-
-    try:
-        os.makedirs(parent)
-    except FileExistsError:
-        # directory already exists
-        pass
-
-    return open(path, mode)
+from utils import safe_open, basename_without_ext
 
 
-def get_extension(mime):
+def get_meta_extension(mime):
     try:
         return ENML_PY.MIME_TO_EXTESION_MAPPING[mime]
     except KeyError:
-        return ""
+        return ".unkown"
 
 
 class Enml_resource_finder:
@@ -65,9 +54,10 @@ class Resource:
         return f"![](data:image/png;base64,{self.base64})"
 
     def get_filename(self):
-        ext = get_extension(self.mime)
+        ext = get_meta_extension(self.mime)
         if self.filename:
-            return f"{self.filename}{ext}"
+            file = basename_without_ext(self.filename)
+            return f"{file}{ext}"
 
         raise RuntimeError(self.__class__.__name__ + " can't figure out filename")
 

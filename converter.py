@@ -3,11 +3,7 @@
 import sys, getopt, os
 
 from notepad import Notepad
-
-
-def basename_without_ext(path):
-    path, _ = os.path.splitext(path)
-    return os.path.basename(path)
+from utils import basename_without_ext
 
 
 def print_and_exit(status=None):
