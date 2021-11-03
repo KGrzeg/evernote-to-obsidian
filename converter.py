@@ -5,13 +5,20 @@ import sys, getopt, os
 from notepad import Notepad
 
 
+def basename_without_ext(path):
+    path, _ = os.path.splitext(path)
+    return os.path.basename(path)
+
+
 def print_and_exit(status=None):
     print("converter.py -i <inputfile> [-o <outputdir>] [-r <attachmentdir>] [-p] [-d]")
     print("arguments:")
     print(" -h prints help and exit")
     print(" -i input file ex. notes.enex")
-    print(" -o output directory for notes")
-    print("  The -o argument is required only if -p is not set")
+    print(" -o output directory for notes folder")
+    print("  default value is current directory")
+    print("  A new directory will be created in output directory")
+    print("  with name based on input file.")
     print(" -r output directory for resource files relative to -o")
     print('  default value is "res"')
     print(" -p prints note list and exit")
@@ -39,7 +46,9 @@ def main(argv):
 
     try:
         opts, args = getopt.getopt(
-            argv, "hdpi:o:r:", ["dump", "printlist", "ifile=", "odir=", "attachmentdir="]
+            argv,
+            "hdpi:o:r:",
+            ["dump", "printlist", "ifile=", "odir=", "attachmentdir="],
         )
 
     except getopt.GetoptError:
@@ -68,10 +77,7 @@ def main(argv):
         print("inputfile is required")
         print_and_exit(2)
 
-    if outputdir == "" and not only_print:
-        print("outputdir is required")
-        print_and_exit(2)
-
+    outputdir = os.path.join(outputdir, basename_without_ext(inputfile))
     attachmentdir = os.path.join(outputdir, attachmentdir)
 
     print("Input file is ", inputfile)

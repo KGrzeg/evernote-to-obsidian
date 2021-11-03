@@ -139,7 +139,7 @@ class Note:
     def write(self, note_dir, attachmentdir, dumpres):
         note_path = os.path.join(note_dir, self.get_filename())
 
-        with open(note_path, "w") as file:
+        with safe_open(note_path, "w") as file:
             file.write(self.get_meta_list())
             file.write(f"\n\n{self.get_content()}")
 
