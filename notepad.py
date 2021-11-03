@@ -2,6 +2,7 @@ import xml.etree.ElementTree as ET
 import os, re, base64, hashlib
 
 import ENML_PY
+import pdfkit
 
 from utils import safe_open, basename_without_ext
 
@@ -96,6 +97,12 @@ class Note:
                     if attr.tag == "source-url":
                         self.is_bookmark = True
 
+    def get_resource_by_filename(self, filename):
+        for res in self.resources:
+            if res.get_filename() == filename:
+                return res
+        return None
+
     def get_filename(self, ext="md"):
         filename = re.sub('[*"\/<>:|?]', "_", self.title)
         if ext:
@@ -109,9 +116,30 @@ class Note:
                 return resource
         return None
 
-    def get_content(self):
-        con = ENML_PY.ENMLToText(self.content, media_store=Enml_resource_finder(self))
-        return re.sub(r"\n\s*\n", "\n\n", con)
+    def get_content_md(self):
+        content = ENML_PY.ENMLToText(
+            self.content, media_store=Enml_resource_finder(self)
+        )
+        return re.sub(r"\n\s*\n", "\n\n", content)
+
+    def filename_to_b64(self, match):
+        res = self.get_resource_by_filename(match.group(1))
+
+        if not res:
+            return match.group(0)
+
+        return f'src="data:{res.mime};base64,{res.base64}"'
+
+    def get_content_html(self):
+        content = ENML_PY.ENMLToHTML(
+            self.content, media_store=Enml_resource_finder(self)
+        )
+        html = content.decode("utf-8")
+
+        # transform images' srcs to base64
+        html = re.sub(r'src="([^"]+)"', self.filename_to_b64, html)
+
+        return re.sub(r"\n\s*\n", "\n\n", html)
 
     def get_meta_list(self):
         ret = "---\n"
@@ -128,10 +156,6 @@ class Note:
 
         return names
 
-    def write_as_html(self, path):
-        with open(path, "w") as file:
-            file.write(self.content)
-
     def write_resources(self, dir):
         paths = ()
         for resource in self.resources:
@@ -140,18 +164,48 @@ class Note:
 
         return paths
 
-    def write(self, note_dir, attachmentdir, dumpres):
+    def write_pdf(self, pdf_dir):
+        pdf_path = os.path.join(pdf_dir, self.get_filename(ext="pdf"))
+        html = self.get_content_html()
+
+        try:
+            ok = pdfkit.from_string(html, pdf_path)
+
+            if not ok:
+                raise self.__class__.__name__ + RuntimeError(
+                    "Error while saving PDF " + pdf_path
+                )
+
+        # Any idea how to catch ProtocolUnknownError only?
+        except:
+            pass
+
+        return (pdf_path,)
+
+    def write_md(self, note_dir):
         note_path = os.path.join(note_dir, self.get_filename())
 
         with safe_open(note_path, "w") as file:
             file.write(self.get_meta_list())
-            file.write(f"\n\n{self.get_content()}")
+            file.write(f"\n\n{self.get_content_md()}")
 
-        res_paths = ()
+        return (note_path,)
+
+    def write(self, note_dir, attachmentdir, dumpres):
+        pdf_path, note_path, res_paths = (), (), ()
+
+        if self.is_bookmark:
+            pdf_path = self.write_pdf(note_dir)
+
+            # TODO: write simple note with link to PDF
+            note_path = self.write_md(note_dir)
+        else:
+            note_path = self.write_md(note_dir)
+
         if dumpres:
             res_paths = self.write_resources(attachmentdir)
 
-        return (note_path, *res_paths)
+        return (*note_path, *pdf_path, *res_paths)
 
 
 class Notepad:
