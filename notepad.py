@@ -6,6 +6,8 @@ import pdfkit
 
 from utils import safe_open, basename_without_ext
 
+MAX_FILENAME_LENGTH = 90
+
 
 def get_meta_extension(mime):
     try:
@@ -48,6 +50,9 @@ class Resource:
             self.filename = filename.text
 
         base = basename_without_ext(self.filename)
+        if len(base) > MAX_FILENAME_LENGTH:
+            base = base[:MAX_FILENAME_LENGTH]
+
         _, ext = os.path.splitext(self.filename)
         counter = 1
         while self.filename in used_names:
@@ -99,6 +104,11 @@ class Note:
                     if attr.tag == "source-url":
                         self.is_bookmark = True
 
+        self.filename = re.sub('[*"\/<>:|?]', "_", self.title)
+        if len(self.filename) > MAX_FILENAME_LENGTH:
+            self.filename = self.filename[:MAX_FILENAME_LENGTH]
+            self.attributes["original_title"] = self.title
+
     def get_resource_by_filename(self, filename):
         for res in self.resources:
             if res.get_filename() == filename:
@@ -106,11 +116,10 @@ class Note:
         return None
 
     def get_filename(self, ext="md"):
-        filename = re.sub('[*"\/<>:|?]', "_", self.title)
         if ext:
-            filename += "." + ext
+            self.filename += "." + ext
 
-        return filename
+        return self.filename
 
     def get_resource(self, hash):
         for resource in self.resources:
