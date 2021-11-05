@@ -1,5 +1,5 @@
 { pkgs ? import <nixpkgs> {} }:
 
 pkgs.mkShell {
-  buildInputs = [ pkgs.python3 pkgs.poetry ];
+  buildInputs = [ pkgs.python3 pkgs.poetry pkgs.wkhtmltopdf ];
 }
