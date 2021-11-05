@@ -89,7 +89,9 @@ class Note:
                 setattr(self, property.tag, property.text)
 
             if property.tag == "resource":
-                self.resources.append(Resource(property, used_names))
+                res = Resource(property, used_names)
+                self.resources.append(res)
+                used_names.append(res.filename)
 
             if property.tag == "note-attributes":
                 for attr in property:
