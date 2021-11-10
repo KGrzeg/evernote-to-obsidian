@@ -54,6 +54,8 @@ class Resource:
             base = base[:MAX_FILENAME_LENGTH]
 
         _, ext = os.path.splitext(self.filename)
+        self.filename = f"{base}{ext}"
+
         counter = 1
         while self.filename in used_names:
             self.filename = f"{base}_{counter}{ext}"
