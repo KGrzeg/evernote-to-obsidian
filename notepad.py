@@ -106,7 +106,7 @@ class Note:
                     if attr.tag == "source-url":
                         self.is_bookmark = True
 
-        self.filename = re.sub('[*"\/<>:|?]', "_", self.title)
+        self.filename = re.sub('[*"\/<>:|?]', "", self.title)
         if len(self.filename) > MAX_FILENAME_LENGTH:
             self.filename = self.filename[:MAX_FILENAME_LENGTH]
             self.attributes["original_title"] = self.title
