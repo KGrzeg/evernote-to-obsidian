@@ -239,11 +239,12 @@ class Notepad:
                 self.resource_names.extend(note.get_resource_names())
 
     def write_notes(self, outputdir, attachmentdir, dumpres):
-        for note in self.notes:
+        for (i, note) in enumerate(self.notes, start=1):
             paths = note.write(outputdir, attachmentdir, dumpres)
 
             for path in paths:
                 print("Saved " + path)
+                print(f"Progress {i}/{len(self.notes)}")
 
     def print_note_list(self):
         for (i, note) in enumerate(self.notes):
