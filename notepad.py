@@ -119,7 +119,7 @@ class Note:
 
     def get_filename(self, ext="md"):
         if ext:
-            self.filename += "." + ext
+            return self.filename + "." + ext
 
         return self.filename
 
