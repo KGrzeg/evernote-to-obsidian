@@ -182,7 +182,7 @@ class Note:
         html = self.get_content_html()
 
         try:
-            ok = pdfkit.from_string(html, pdf_path)
+            ok = pdfkit.from_string(html, pdf_path, options={"quiet": ""})
 
             if not ok:
                 raise self.__class__.__name__ + RuntimeError(
