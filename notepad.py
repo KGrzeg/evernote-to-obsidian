@@ -6,6 +6,8 @@ import pdfkit
 
 from utils import safe_open, basename_without_ext
 
+MAX_FILENAME_LENGTH = 90
+
 
 def get_meta_extension(mime):
     try:
@@ -48,7 +50,12 @@ class Resource:
             self.filename = filename.text
 
         base = basename_without_ext(self.filename)
+        if len(base) > MAX_FILENAME_LENGTH:
+            base = base[:MAX_FILENAME_LENGTH]
+
         _, ext = os.path.splitext(self.filename)
+        self.filename = f"{base}{ext}"
+
         counter = 1
         while self.filename in used_names:
             self.filename = f"{base}_{counter}{ext}"
@@ -89,13 +96,20 @@ class Note:
                 setattr(self, property.tag, property.text)
 
             if property.tag == "resource":
-                self.resources.append(Resource(property, used_names))
+                res = Resource(property, used_names)
+                self.resources.append(res)
+                used_names.append(res.filename)
 
             if property.tag == "note-attributes":
                 for attr in property:
                     self.attributes[attr.tag] = attr.text
                     if attr.tag == "source-url":
                         self.is_bookmark = True
+
+        self.filename = re.sub('[*"\/<>:|?]', "", self.title)
+        if len(self.filename) > MAX_FILENAME_LENGTH:
+            self.filename = self.filename[:MAX_FILENAME_LENGTH]
+            self.attributes["original_title"] = self.title
 
     def get_resource_by_filename(self, filename):
         for res in self.resources:
@@ -104,11 +118,10 @@ class Note:
         return None
 
     def get_filename(self, ext="md"):
-        filename = re.sub('[*"\/<>:|?]', "_", self.title)
         if ext:
-            filename += "." + ext
+            return self.filename + "." + ext
 
-        return filename
+        return self.filename
 
     def get_resource(self, hash):
         for resource in self.resources:
@@ -169,7 +182,7 @@ class Note:
         html = self.get_content_html()
 
         try:
-            ok = pdfkit.from_string(html, pdf_path)
+            ok = pdfkit.from_string(html, pdf_path, options={"quiet": ""})
 
             if not ok:
                 raise self.__class__.__name__ + RuntimeError(
@@ -226,11 +239,12 @@ class Notepad:
                 self.resource_names.extend(note.get_resource_names())
 
     def write_notes(self, outputdir, attachmentdir, dumpres):
-        for note in self.notes:
+        for (i, note) in enumerate(self.notes, start=1):
             paths = note.write(outputdir, attachmentdir, dumpres)
 
             for path in paths:
                 print("Saved " + path)
+                print(f"Progress {i}/{len(self.notes)}")
 
     def print_note_list(self):
         for (i, note) in enumerate(self.notes):
