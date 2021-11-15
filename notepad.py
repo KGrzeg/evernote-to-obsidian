@@ -1,5 +1,6 @@
 import xml.etree.ElementTree as ET
 import os, re, base64, hashlib
+from datetime import datetime
 
 import ENML_PY
 import pdfkit
@@ -7,6 +8,8 @@ import pdfkit
 from utils import safe_open, basename_without_ext
 
 MAX_FILENAME_LENGTH = 90
+ENEX_DATATIME_FORMAT = "%Y%m%dT%H%M%SZ"
+NOTE_DATE_PREFIX_FORMAT = "%Y-%m-%d"
 
 
 def get_meta_extension(mime):
@@ -118,10 +121,13 @@ class Note:
         return None
 
     def get_filename(self, ext="md"):
-        if ext:
-            return self.filename + "." + ext
+        created = datetime.strptime(self.created, ENEX_DATATIME_FORMAT)
+        datestr = created.strftime(NOTE_DATE_PREFIX_FORMAT)
 
-        return self.filename
+        if ext:
+            return f"{datestr}-{self.filename}.{ext}"
+
+        return f"{datestr}-{self.filename}"
 
     def get_resource(self, hash):
         for resource in self.resources:
