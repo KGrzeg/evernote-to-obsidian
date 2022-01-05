@@ -3,9 +3,9 @@ import os, re, base64, hashlib
 from datetime import datetime
 
 import ENML_PY
-import pdfkit
 
-from utils import safe_open, basename_without_ext
+from utils import safe_open, basename_without_ext, create_directory
+from pages_converter import html_to_image
 
 MAX_FILENAME_LENGTH = 90
 ENEX_DATATIME_FORMAT = "%Y%m%dT%H%M%SZ"
@@ -20,14 +20,18 @@ def get_meta_extension(mime):
 
 
 class Enml_resource_finder:
-    def __init__(self, note):
+    def __init__(self, note, res_dir=None):
         self.note = note
+        self.res_dir = res_dir
 
     def save(self, hash_str, mime_type):
         res = self.note.get_resource(hash_str)
 
         if res != None:
-            return res.get_filename()
+            path = res.get_filename()
+            if self.res_dir:
+                path = os.path.join(self.res_dir, path)
+            return path
 
         else:
             print("Resource not found")
@@ -149,9 +153,9 @@ class Note:
 
         return f'src="data:{res.mime};base64,{res.base64}"'
 
-    def get_content_html(self):
+    def get_content_html(self, res_dir):
         content = ENML_PY.ENMLToHTML(
-            self.content, media_store=Enml_resource_finder(self)
+            self.content, media_store=Enml_resource_finder(self, res_dir)
         )
         html = content.decode("utf-8")
 
@@ -183,23 +187,15 @@ class Note:
 
         return paths
 
-    def write_pdf(self, pdf_dir):
-        pdf_path = os.path.join(pdf_dir, self.get_filename(ext="pdf"))
-        html = self.get_content_html()
+    def write_page_img(self, res_dir):
+        img_path = os.path.join(res_dir, self.get_filename(ext="jpg"))
+        html = self.get_content_html(res_dir)
 
-        try:
-            ok = pdfkit.from_string(html, pdf_path, options={"quiet": ""})
+        create_directory(res_dir)
 
-            if not ok:
-                raise self.__class__.__name__ + RuntimeError(
-                    "Error while saving PDF " + pdf_path
-                )
+        html_to_image(html, img_path)
 
-        # Any idea how to catch ProtocolUnknownError only?
-        except:
-            pass
-
-        return (pdf_path,)
+        return (img_path,)
 
     def write_md(self, note_dir, prefix=""):
         note_path = os.path.join(note_dir, self.get_filename())
@@ -216,8 +212,8 @@ class Note:
         pdf_path, note_path, res_paths = (), (), ()
 
         if self.is_bookmark:
-            pdf_path = self.write_pdf(attachmentdir)
-            prefix = f'![[{ self.get_filename(ext="pdf") }]]'
+            pdf_path = self.write_page_img(attachmentdir)
+            prefix = f'![[{ self.get_filename(ext="jpg") }]]'
             note_path = self.write_md(note_dir, prefix)
         else:
             note_path = self.write_md(note_dir)
