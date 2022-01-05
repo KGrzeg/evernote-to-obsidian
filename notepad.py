@@ -9,7 +9,7 @@ from pages_converter import html_to_image
 
 MAX_FILENAME_LENGTH = 90
 ENEX_DATATIME_FORMAT = "%Y%m%dT%H%M%SZ"
-NOTE_DATE_PREFIX_FORMAT = "%Y-%m-%d"
+NOTE_DATE_PREFIX_FORMAT = "%Y-%m-%d-%H%M%S"
 
 
 def get_meta_extension(mime):
@@ -113,7 +113,7 @@ class Note:
                     if attr.tag == "source-url":
                         self.is_bookmark = True
 
-        self.filename = re.sub('[*"\/<>:|?]', "", self.title)
+        self.filename = re.sub('[*"\/<>:|?#\n]', "", self.title)
         if len(self.filename) > MAX_FILENAME_LENGTH:
             self.filename = self.filename[:MAX_FILENAME_LENGTH]
             self.attributes["original_title"] = self.title
@@ -211,15 +211,15 @@ class Note:
     def write(self, note_dir, attachmentdir, dumpres):
         pdf_path, note_path, res_paths = (), (), ()
 
+        if dumpres:
+            res_paths = self.write_resources(attachmentdir)
+
         if self.is_bookmark:
             pdf_path = self.write_page_img(attachmentdir)
             prefix = f'![[{ self.get_filename(ext="jpg") }]]'
             note_path = self.write_md(note_dir, prefix)
         else:
             note_path = self.write_md(note_dir)
-
-        if dumpres:
-            res_paths = self.write_resources(attachmentdir)
 
         return (*note_path, *pdf_path, *res_paths)
 
